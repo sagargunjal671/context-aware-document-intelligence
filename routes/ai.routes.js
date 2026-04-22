@@ -2,7 +2,7 @@ const express   = require('express');
 const multer    = require('multer');
 const rateLimit = require('express-rate-limit');
 const router    = express.Router();
-const { addDocument, askQuestion, uploadFile, getDocuments, deleteDocument, getKnowledgeStats } = require('../app/controllers/ai.controller');
+const { addDocument, askQuestion, askQuestionStream, uploadFile, getDocuments, deleteDocument, getKnowledgeStats } = require('../app/controllers/ai.controller');
 const { verifyToken } = require('../app/middleware/auth.middleware');
 
 // Store uploaded files in memory as Buffer (no disk writes)
@@ -45,6 +45,9 @@ router.post('/upload', uploadLimiter, upload.single('file'), uploadFile);
 
 // POST /api/ai/ask          → Ask a question against stored documents
 router.post('/ask', askLimiter, askQuestion);
+
+// POST /api/ai/ask-stream   → Same but streams tokens via SSE
+router.post('/ask-stream', askLimiter, askQuestionStream);
 
 // GET  /api/ai/stats         → Total document + chunk counts for UI stats bar
 router.get('/stats', getKnowledgeStats);

@@ -1,6 +1,6 @@
 const { chunkText }         = require('../services/chunking.service');
 const { generateEmbedding } = require('../services/embedding.service');
-const { generateAnswer }    = require('../services/ai.service');
+const { generateAnswer, generateAnswerStream } = require('../services/ai.service');
 const { extractText }       = require('../services/fileParser.service');
 const {
   createSession,
@@ -167,4 +167,55 @@ const getKnowledgeStats = async (req, res) => {
   }
 };
 
-module.exports = { addDocument, uploadFile, askQuestion, getDocuments, deleteDocument, getKnowledgeStats };
+/**
+ * POST /api/ai/ask-stream
+ * Same as askQuestion but streams tokens back via Server-Sent Events.
+ * The client reads the stream and appends tokens to the UI as they arrive.
+ */
+const askQuestionStream = async (req, res) => {
+  const { question, doc_session_ids, history = [] } = req.body;
+  const userId = req.user.id;
+
+  if (!question || question.trim() === '') {
+    return res.status(400).json({ error: 'Question is required' });
+  }
+
+  if (!Array.isArray(doc_session_ids) || doc_session_ids.length === 0) {
+    return res.status(400).json({ error: 'doc_session_ids is required. Select at least one document.' });
+  }
+
+  // Set SSE headers — keep connection open, disable buffering
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  try {
+    const { stream, sources } = await generateAnswerStream(question, doc_session_ids, userId, history);
+
+    // No matching chunks — send the fallback message as a single token then done
+    if (!stream) {
+      res.write(`data: ${JSON.stringify({ token: "I don't know based on the provided documents." })}\n\n`);
+      res.write(`data: ${JSON.stringify({ done: true, sources: [] })}\n\n`);
+      return res.end();
+    }
+
+    // Stream each token to the client as it arrives from OpenAI
+    for await (const chunk of stream) {
+      const token = chunk.choices[0]?.delta?.content || '';
+      if (token) {
+        res.write(`data: ${JSON.stringify({ token })}\n\n`);
+      }
+    }
+
+    // Signal end of stream + send sources
+    res.write(`data: ${JSON.stringify({ done: true, sources })}\n\n`);
+    res.end();
+  } catch (err) {
+    console.error('[askQuestionStream]', err.message);
+    res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
+    res.end();
+  }
+};
+
+module.exports = { addDocument, uploadFile, askQuestion, askQuestionStream, getDocuments, deleteDocument, getKnowledgeStats };

@@ -2157,11 +2157,11 @@
     input.value = '';
     autoResize(input);
 
-    const typingId = appendTyping();
     document.getElementById('send-btn').disabled = true;
+    const typingId = appendTyping();
 
     try {
-      const res  = await fetch(`${API}/ask`, {
+      const res = await fetch(`${API}/ask-stream`, {
         method:  'POST',
         headers: getAuthHeaders(),
         body:    JSON.stringify({
@@ -2170,17 +2170,52 @@
           history: chatHistory,
         }),
       });
-      const data = await res.json();
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Something went wrong');
+      }
+
       removeTyping(typingId);
-      if (!res.ok) throw new Error(data.error || 'Something went wrong');
 
-      // Update conversation history after a successful exchange
-      chatHistory.push({ role: 'user',      content: question });
-      chatHistory.push({ role: 'assistant', content: data.answer });
-      // Cap at last 6 messages (3 exchanges) to keep tokens bounded
-      if (chatHistory.length > 6) chatHistory = chatHistory.slice(-6);
+      // Create the AI bubble now — we'll fill it token by token
+      const bubble = appendStreamingBubble();
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let fullText = '';
+      let buffer = '';
 
-      appendMessage('ai', data.answer, data.sources);
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop(); // keep incomplete line for next chunk
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const payload = JSON.parse(line.slice(6));
+
+          if (payload.error) throw new Error(payload.error);
+
+          if (payload.token) {
+            fullText += payload.token;
+            bubble.textContent = fullText; // plain text while streaming
+          }
+
+          if (payload.done) {
+            // Render markdown once complete
+            bubble.innerHTML = marked.parse(fullText);
+            appendSources(bubble.parentElement, payload.sources || []);
+
+            // Save to history
+            chatHistory.push({ role: 'user',      content: question });
+            chatHistory.push({ role: 'assistant', content: fullText });
+            if (chatHistory.length > 6) chatHistory = chatHistory.slice(-6);
+          }
+        }
+      }
     } catch (err) {
       removeTyping(typingId);
       appendMessage('ai', '❌ ' + err.message);
@@ -2268,6 +2303,82 @@
     msg.appendChild(avatar);
     msg.appendChild(col);
     box.appendChild(msg);
+    box.scrollTop = box.scrollHeight;
+    updateMsgCount();
+  }
+
+  // ── Streaming bubble (created empty, filled token by token) ──
+  function appendStreamingBubble() {
+    const box = document.getElementById('chat-box');
+
+    const msg = document.createElement('div');
+    msg.className = 'message ai';
+
+    const avatar = document.createElement('div');
+    avatar.className = 'avatar';
+    avatar.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`;
+
+    const col = document.createElement('div');
+    col.className = 'bubble-col';
+
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+
+    col.appendChild(bubble);
+    msg.appendChild(avatar);
+    msg.appendChild(col);
+    box.appendChild(msg);
+    box.scrollTop = box.scrollHeight;
+
+    return bubble;
+  }
+
+  // ── Append sources + copy button after streaming completes ──
+  function appendSources(col, sources) {
+    const bubble = col.querySelector('.bubble');
+
+    if (sources.length > 0) {
+      const srcEl = document.createElement('div');
+      srcEl.className = 'sources';
+      srcEl.innerHTML = `<div class="src-label">Sources</div>` +
+        sources.map(s =>
+          `<div class="src-chip">
+            <strong>Chunk ${s.chunk_index} &middot; ${(s.score * 100).toFixed(0)}% match</strong><br>
+            ${escapeHtml(s.content.slice(0, 120))}${s.content.length > 120 ? '…' : ''}
+          </div>`
+        ).join('');
+      bubble.appendChild(srcEl);
+    }
+
+    const time = document.createElement('div');
+    time.className = 'msg-time';
+    time.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'copy-btn';
+    copyBtn.innerHTML = 'Copy';
+    copyBtn.title = 'Copy response';
+    copyBtn.onclick = () => {
+      const clone = bubble.cloneNode(true);
+      clone.querySelector('.sources')?.remove();
+      const plainText = clone.innerText || clone.textContent;
+      navigator.clipboard.writeText(plainText.trim()).then(() => {
+        copyBtn.innerHTML = 'Copied!';
+        copyBtn.classList.add('copied');
+        setTimeout(() => {
+          copyBtn.innerHTML = 'Copy';
+          copyBtn.classList.remove('copied');
+        }, 2000);
+      });
+    };
+
+    const actions = document.createElement('div');
+    actions.className = 'msg-actions';
+    actions.appendChild(time);
+    actions.appendChild(copyBtn);
+    col.appendChild(actions);
+
+    const box = document.getElementById('chat-box');
     box.scrollTop = box.scrollHeight;
     updateMsgCount();
   }

@@ -86,4 +86,59 @@ RULES:
   };
 };
 
-module.exports = { generateAnswer };
+/**
+ * Streaming version of generateAnswer.
+ * Returns the OpenAI stream + sources so the controller can
+ * pipe tokens to the client as they arrive.
+ */
+const generateAnswerStream = async (question, docSessionIds, userId, history = []) => {
+  const questionEmbedding = await generateEmbedding(question);
+  const topChunks = await findTopChunks(questionEmbedding, docSessionIds, 5, userId);
+
+  if (topChunks.length === 0) {
+    return { stream: null, sources: [] };
+  }
+
+  const context = topChunks
+    .map((chunk, i) => `[Source ${i + 1}]:\n${chunk.content}`)
+    .join('\n\n');
+
+  const recentHistory = history.slice(-6);
+
+  const stream = await openai.chat.completions.create({
+    model:  'gpt-4o-mini',
+    stream: true,
+    messages: [
+      {
+        role: 'system',
+        content: `You are a professional document assistant. Your job is to answer questions accurately based strictly on the provided document context.
+
+RULES:
+1. Answer ONLY using the context provided. Do not use any external knowledge or training data.
+2. If the answer is not in the context, say exactly: "I don't know based on the provided documents."
+3. If the context partially answers the question, share what you found and clearly state what is missing.
+4. Be concise and professional. Avoid filler phrases like "Certainly!" or "Great question!".
+5. Use bullet points for lists or multi-part answers. Use plain paragraphs for single-topic answers.
+6. When your answer comes from a specific part of the document, reference it naturally (e.g. "According to the document...").
+7. You have access to the conversation history below — use it to understand follow-up questions and references like "it", "that", "the previous answer", etc.
+8. Respond in the same language the user asked in.`,
+      },
+      ...recentHistory,
+      {
+        role: 'user',
+        content: `Context:\n${context}\n\nQuestion: ${question}`,
+      },
+    ],
+    temperature: 0.2,
+  });
+
+  const sources = topChunks.map((chunk) => ({
+    chunk_index: chunk.chunk_index,
+    score:       parseFloat(chunk.score.toFixed(4)),
+    content:     chunk.content,
+  }));
+
+  return { stream, sources };
+};
+
+module.exports = { generateAnswer, generateAnswerStream };
