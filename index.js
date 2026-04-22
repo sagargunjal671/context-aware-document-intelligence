@@ -1,8 +1,9 @@
 require('dotenv').config();
-const express  = require('express');
-const path     = require('path');
-const morgan   = require('morgan');
-const aiRoutes = require('./routes/ai.routes');
+const express    = require('express');
+const path       = require('path');
+const morgan     = require('morgan');
+const aiRoutes   = require('./routes/ai.routes');
+const authRoutes = require('./routes/auth.routes');
 
 const app = express();
 
@@ -16,7 +17,10 @@ app.use(express.json());
 // Serve frontend from /public folder
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Mount AI routes under /api/ai
+// Public routes — no token required
+app.use('/api/auth', authRoutes);
+
+// Protected routes — verifyToken middleware applied inside ai.routes.js
 app.use('/api/ai', aiRoutes);
 
 const PORT = process.env.PORT || 3000;

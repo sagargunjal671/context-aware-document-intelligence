@@ -3,6 +3,7 @@ const multer    = require('multer');
 const rateLimit = require('express-rate-limit');
 const router    = express.Router();
 const { addDocument, askQuestion, uploadFile, getDocuments, deleteDocument, getKnowledgeStats } = require('../app/controllers/ai.controller');
+const { verifyToken } = require('../app/middleware/auth.middleware');
 
 // Store uploaded files in memory as Buffer (no disk writes)
 const upload = multer({
@@ -32,6 +33,9 @@ const uploadLimiter = rateLimit({
   max:      10,
   message:  { error: 'Too many uploads. Please wait 15 minutes and try again.' },
 });
+
+// All routes below require a valid JWT — verifyToken populates req.user
+router.use(verifyToken);
 
 // POST /api/ai/add     → Store raw text document
 router.post('/add', uploadLimiter, addDocument);

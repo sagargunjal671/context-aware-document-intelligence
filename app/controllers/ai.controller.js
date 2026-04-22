@@ -14,20 +14,19 @@ const {
  * POST /api/ai/add
  * Accepts raw text + a title, creates a doc session,
  * chunks the text, embeds each chunk, stores all under that session.
+ * Scoped to req.user.id so documents are private per user.
  */
 const addDocument = async (req, res) => {
   try {
     const { content, title } = req.body;
+    const userId = req.user.id;
 
     if (!content || content.trim() === '') {
       return res.status(400).json({ error: 'Content is required' });
     }
 
-    // Use provided title or fall back to a timestamp-based name
     const sessionTitle = title?.trim() || `Document – ${new Date().toLocaleString()}`;
-
-    // Create an isolated session for this document
-    const sessionId = await createSession(sessionTitle);
+    const sessionId = await createSession(sessionTitle, userId);
 
     const chunks = chunkText(content);
 
@@ -56,6 +55,8 @@ const addDocument = async (req, res) => {
  */
 const uploadFile = async (req, res) => {
   try {
+    const userId = req.user.id;
+
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
@@ -70,8 +71,7 @@ const uploadFile = async (req, res) => {
       return res.status(400).json({ error: 'Could not extract text from the file' });
     }
 
-    // Use the original filename as the session title
-    const sessionId = await createSession(req.file.originalname);
+    const sessionId = await createSession(req.file.originalname, userId);
 
     const chunks = chunkText(text);
 
@@ -94,12 +94,14 @@ const uploadFile = async (req, res) => {
 
 /**
  * POST /api/ai/ask
- * Requires doc_session_id in the body so the search is scoped
- * to one specific document — no cross-document contamination.
+ * Scoped to req.user.id — the JOIN in fetchChunksBySessions
+ * ensures a user can never retrieve another user's chunks
+ * even if they pass foreign doc_session_ids.
  */
 const askQuestion = async (req, res) => {
   try {
-    const { question, doc_session_ids } = req.body;
+    const { question, doc_session_ids, history = [] } = req.body;
+    const userId = req.user.id;
 
     if (!question || question.trim() === '') {
       return res.status(400).json({ error: 'Question is required' });
@@ -109,7 +111,7 @@ const askQuestion = async (req, res) => {
       return res.status(400).json({ error: 'doc_session_ids is required. Select at least one document.' });
     }
 
-    const result = await generateAnswer(question, doc_session_ids);
+    const result = await generateAnswer(question, doc_session_ids, userId, history);
 
     return res.status(200).json({
       question,
@@ -124,11 +126,11 @@ const askQuestion = async (req, res) => {
 
 /**
  * GET /api/ai/documents
- * Returns all uploaded document sessions for the document list in UI.
+ * Returns only the sessions belonging to the logged-in user.
  */
-const getDocuments = async (_req, res) => {
+const getDocuments = async (req, res) => {
   try {
-    const sessions = await getAllSessions();
+    const sessions = await getAllSessions(req.user.id);
     return res.status(200).json({ documents: sessions });
   } catch (err) {
     console.error('[getDocuments]', err.message);
@@ -138,12 +140,12 @@ const getDocuments = async (_req, res) => {
 
 /**
  * DELETE /api/ai/documents/:id
- * Deletes a session and all its chunks (via CASCADE).
+ * Deletes a session only if it belongs to the logged-in user.
  */
 const deleteDocument = async (req, res) => {
   try {
     const { id } = req.params;
-    await deleteSession(id);
+    await deleteSession(id, req.user.id);
     return res.status(200).json({ success: true, message: 'Document deleted' });
   } catch (err) {
     console.error('[deleteDocument]', err.message);
@@ -153,11 +155,11 @@ const deleteDocument = async (req, res) => {
 
 /**
  * GET /api/ai/stats
- * Returns total document count and total chunk count for the stats bar in UI.
+ * Returns doc and chunk counts scoped to the logged-in user.
  */
-const getKnowledgeStats = async (_req, res) => {
+const getKnowledgeStats = async (req, res) => {
   try {
-    const stats = await getStats();
+    const stats = await getStats(req.user.id);
     return res.status(200).json(stats);
   } catch (err) {
     console.error('[getKnowledgeStats]', err.message);

@@ -2,17 +2,17 @@ const pool = require('../config/db');
 
 // ── Doc Sessions ─────────────────────────────────────────────
 
-// Create a new document session and return its generated ID
-const createSession = async (title) => {
+// Create a new document session linked to a user
+const createSession = async (title, userId) => {
   const [result] = await pool.execute(
-    'INSERT INTO doc_sessions (title) VALUES (?)',
-    [title]
+    'INSERT INTO doc_sessions (title, user_id) VALUES (?, ?)',
+    [title, userId]
   );
   return result.insertId;
 };
 
-// Fetch all sessions (for document list in UI)
-const getAllSessions = async () => {
+// Fetch all sessions belonging to a specific user
+const getAllSessions = async (userId) => {
   const [rows] = await pool.execute(`
     SELECT
       ds.id,
@@ -21,15 +21,19 @@ const getAllSessions = async () => {
       COUNT(d.id) AS chunk_count
     FROM doc_sessions ds
     LEFT JOIN documents d ON d.doc_session_id = ds.id
+    WHERE ds.user_id = ?
     GROUP BY ds.id, ds.title, ds.created_at
     ORDER BY ds.created_at DESC
-  `);
+  `, [userId]);
   return rows;
 };
 
-// Delete a session — CASCADE deletes all its chunks automatically
-const deleteSession = async (sessionId) => {
-  await pool.execute('DELETE FROM doc_sessions WHERE id = ?', [sessionId]);
+// Delete a session — only if it belongs to the requesting user
+const deleteSession = async (sessionId, userId) => {
+  await pool.execute(
+    'DELETE FROM doc_sessions WHERE id = ? AND user_id = ?',
+    [sessionId, userId]
+  );
 };
 
 // ── Documents (Chunks) ───────────────────────────────────────
@@ -49,23 +53,32 @@ const insertChunk = async (docSessionId, content, embedding, chunkIndex) => {
   return result;
 };
 
-// Total document sessions and chunks — used by the stats endpoint
-const getStats = async () => {
-  const [[{ doc_count }]]   = await pool.execute('SELECT COUNT(*) AS doc_count FROM doc_sessions');
-  const [[{ chunk_count }]] = await pool.execute('SELECT COUNT(*) AS chunk_count FROM documents');
+// Stats scoped to a specific user
+const getStats = async (userId) => {
+  const [[{ doc_count }]]   = await pool.execute(
+    'SELECT COUNT(*) AS doc_count FROM doc_sessions WHERE user_id = ?', [userId]
+  );
+  const [[{ chunk_count }]] = await pool.execute(
+    `SELECT COUNT(*) AS chunk_count FROM documents d
+     INNER JOIN doc_sessions ds ON ds.id = d.doc_session_id
+     WHERE ds.user_id = ?`, [userId]
+  );
   return { doc_count, chunk_count };
 };
 
-// Fetch chunks across one OR many sessions.
-// Uses IN (?, ?, ...) so a single query handles both single and multi-doc search.
-// This is the core of multi-document Q&A — chunks from all selected docs
-// compete on cosine similarity and the best ones win regardless of source.
-const fetchChunksBySessions = async (docSessionIds) => {
+// Fetch chunks across one OR many sessions — scoped to the user.
+// The user_id check via JOIN ensures users can never query another user's chunks,
+// even if they manually pass a foreign doc_session_id.
+const fetchChunksBySessions = async (docSessionIds, userId) => {
   if (!docSessionIds || docSessionIds.length === 0) return [];
   const placeholders = docSessionIds.map(() => '?').join(', ');
   const [rows] = await pool.execute(
-    `SELECT id, content, embedding, chunk_index, doc_session_id FROM documents WHERE doc_session_id IN (${placeholders})`,
-    docSessionIds
+    `SELECT d.id, d.content, d.embedding, d.chunk_index, d.doc_session_id
+     FROM documents d
+     INNER JOIN doc_sessions ds ON ds.id = d.doc_session_id
+     WHERE d.doc_session_id IN (${placeholders})
+       AND ds.user_id = ?`,
+    [...docSessionIds, userId]
   );
   return rows.map((row) => ({
     ...row,

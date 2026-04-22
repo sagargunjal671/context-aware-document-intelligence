@@ -49,8 +49,8 @@ const MIN_SCORE = 0.1;
  * If no chunks pass the threshold, an empty array is returned.
  * The caller (ai.service) handles this by telling GPT there is no context.
  */
-const findTopChunks = async (questionEmbedding, docSessionIds, topN = 5) => {
-  const allChunks = await fetchChunksBySessions(docSessionIds);
+const findTopChunks = async (questionEmbedding, docSessionIds, topN = 5, userId) => {
+  const allChunks = await fetchChunksBySessions(docSessionIds, userId);
 
   const scored = allChunks.map((chunk) => ({
     id:          chunk.id,

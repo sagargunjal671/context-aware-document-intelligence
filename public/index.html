@@ -105,24 +105,15 @@
     }
 
     .logo-mark {
-      width: 34px;
-      height: 34px;
-      background: linear-gradient(135deg, #6366f1, #8b5cf6, #06b6d4, #6366f1);
-      background-size: 300% 300%;
-      animation: logo-gradient 4s ease infinite;
-      border-radius: 10px;
+      width: 32px;
+      height: 32px;
+      background: var(--accent);
+      border-radius: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 17px;
-      box-shadow: 0 0 18px var(--accent-glow);
       flex-shrink: 0;
-    }
-
-    @keyframes logo-gradient {
-      0%   { background-position: 0% 50%; }
-      50%  { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
+      color: #fff;
     }
 
     .logo-name {
@@ -146,10 +137,10 @@
       font-size: .68rem;
       padding: 3px 10px;
       border-radius: 999px;
-      font-weight: 600;
-      background: var(--accent-subtle);
-      color: var(--accent);
-      border: 1px solid var(--accent-glow);
+      font-weight: 500;
+      background: var(--surface2);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
     }
 
     .theme-btn {
@@ -208,19 +199,16 @@
       background: var(--accent);
       color: #fff;
       border: none;
-      border-radius: var(--radius-md);
+      border-radius: var(--radius-sm);
       font-size: .83rem;
       font-weight: 600;
       cursor: pointer;
-      transition: all .2s;
-      box-shadow: 0 2px 10px var(--accent-glow);
+      transition: background .15s;
       letter-spacing: .01em;
     }
 
     .add-doc-btn:hover {
       background: var(--accent-hover);
-      transform: translateY(-1px);
-      box-shadow: 0 4px 18px var(--accent-glow);
     }
 
     .upload-form-wrap {
@@ -312,7 +300,7 @@
       height: 100%;
     }
 
-    .drop-icon { font-size: 1.5rem; }
+    .drop-icon { display: flex; margin-bottom: 4px; }
     .drop-title { font-size: .78rem; font-weight: 600; color: var(--text); margin-top: 5px; }
     .drop-sub { font-size: .68rem; color: var(--text-muted); margin-top: 2px; }
 
@@ -412,8 +400,8 @@
       flex-direction: column;
       align-items: center;
       padding: 7px 4px;
-      background: var(--accent-subtle);
-      border: 1px solid var(--accent-glow);
+      background: var(--surface2);
+      border: 1px solid var(--border);
       border-radius: var(--radius-sm);
       gap: 2px;
     }
@@ -421,7 +409,7 @@
     .s-val {
       font-size: .95rem;
       font-weight: 700;
-      color: var(--accent);
+      color: var(--text);
       line-height: 1;
     }
 
@@ -527,7 +515,7 @@
       text-align: center;
     }
 
-    .doc-empty-icon { font-size: 2rem; opacity: .45; }
+    .doc-empty-icon { opacity: .4; display: flex; }
     .doc-empty-text { font-size: .75rem; line-height: 1.55; }
 
     .doc-item {
@@ -806,16 +794,15 @@
     @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
 
     .ce-icon {
-      width: 68px;
-      height: 68px;
-      border-radius: 18px;
-      background: var(--accent-subtle);
-      border: 1px solid var(--accent-glow);
+      width: 56px;
+      height: 56px;
+      border-radius: 14px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 30px;
-      box-shadow: 0 0 30px var(--accent-glow);
+      color: var(--text-muted);
     }
 
     .ce-title {
@@ -857,7 +844,6 @@
       border-color: var(--accent);
       color: var(--accent);
       background: var(--accent-subtle);
-      transform: translateY(-1px);
     }
 
     /* ── Messages ── */
@@ -887,8 +873,7 @@
     }
 
     .message.user .avatar {
-      background: var(--user-bubble);
-      box-shadow: 0 2px 10px var(--accent-glow);
+      background: var(--accent);
     }
 
     .message.ai .avatar {
@@ -914,10 +899,9 @@
     }
 
     .message.user .bubble {
-      background: var(--user-bubble);
+      background: var(--accent);
       color: #fff;
       border-bottom-right-radius: 4px;
-      box-shadow: 0 2px 14px var(--accent-glow);
     }
 
     .message.ai .bubble {
@@ -984,11 +968,11 @@
     .bubble code {
       font-family: 'Cascadia Code','Fira Code',monospace;
       font-size: .78rem;
-      background: var(--accent-subtle);
-      border: 1px solid var(--accent-glow);
+      background: var(--surface2);
+      border: 1px solid var(--border);
       padding: 1px 5px;
       border-radius: 4px;
-      color: var(--accent);
+      color: var(--text-muted);
     }
     .bubble pre {
       background: var(--surface2);
@@ -1023,14 +1007,14 @@
     .src-chip {
       font-size: .7rem;
       padding: 5px 9px;
-      background: var(--accent-subtle);
-      border: 1px solid var(--accent-glow);
+      background: var(--surface2);
+      border: 1px solid var(--border);
       border-radius: 6px;
       color: var(--text-muted);
       line-height: 1.5;
     }
 
-    .src-chip strong { color: var(--accent); font-weight: 600; }
+    .src-chip strong { color: var(--text); font-weight: 600; }
 
     /* Typing */
     .typing {
@@ -1077,7 +1061,6 @@
 
     .input-box:focus-within {
       border-color: var(--accent);
-      box-shadow: 0 0 0 3px var(--accent-glow);
     }
 
     .chat-input {
@@ -1098,25 +1081,22 @@
     .chat-input::placeholder { color: var(--text-dim); }
 
     .send-btn {
-      width: 36px;
-      height: 36px;
-      border-radius: 12px;
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
       border: none;
       background: var(--accent);
       color: #fff;
-      font-size: 15px;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      transition: all .2s;
-      box-shadow: 0 2px 10px var(--accent-glow);
+      transition: background .15s;
     }
 
     .send-btn:hover:not(:disabled) {
       background: var(--accent-hover);
-      transform: scale(1.06);
     }
 
     .send-btn:disabled { opacity: .35; cursor: not-allowed; transform: none; }
@@ -1231,6 +1211,196 @@
       to   { width:0%; }
     }
 
+    /* ── Auth screen ── */
+    .auth-screen {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+
+    .auth-card {
+      width: 100%;
+      max-width: 380px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 36px 32px;
+      box-shadow: var(--shadow-md);
+    }
+
+    .auth-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+
+    .auth-logo-mark {
+      width: 32px;
+      height: 32px;
+      background: var(--accent);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      flex-shrink: 0;
+    }
+
+    .auth-logo-name {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -.02em;
+    }
+
+    .auth-logo-sub {
+      font-size: .68rem;
+      color: var(--text-muted);
+    }
+
+    .auth-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 4px;
+      letter-spacing: -.02em;
+    }
+
+    .auth-sub {
+      font-size: .8rem;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+    }
+
+    .auth-tabs {
+      display: flex;
+      gap: 3px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 3px;
+      margin-bottom: 20px;
+    }
+
+    .auth-tab {
+      flex: 1;
+      padding: 6px;
+      border: none;
+      border-radius: 6px;
+      font-size: .78rem;
+      font-weight: 600;
+      cursor: pointer;
+      background: transparent;
+      color: var(--text-muted);
+      transition: all .15s;
+    }
+
+    .auth-tab.active {
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .auth-field {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      margin-bottom: 14px;
+    }
+
+    .auth-label {
+      font-size: .75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .auth-input {
+      width: 100%;
+      padding: 9px 12px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-size: .875rem;
+      font-family: inherit;
+      transition: border .15s;
+      outline: none;
+    }
+
+    .auth-input:focus { border-color: var(--accent); }
+    .auth-input::placeholder { color: var(--text-dim); }
+
+    .auth-btn {
+      width: 100%;
+      padding: 10px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: .875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .15s;
+      margin-top: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .auth-btn:hover:not(:disabled) { background: var(--accent-hover); }
+    .auth-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    .auth-error {
+      margin-top: 12px;
+      padding: 8px 12px;
+      background: var(--danger-subtle);
+      border: 1px solid var(--danger-border);
+      border-radius: var(--radius-sm);
+      font-size: .78rem;
+      color: var(--danger);
+      display: none;
+    }
+
+    .auth-error.visible { display: block; }
+
+    /* User badge in header */
+    .user-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .user-name {
+      font-size: .75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .logout-btn {
+      padding: 5px 11px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-muted);
+      font-size: .72rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s;
+    }
+
+    .logout-btn:hover {
+      background: var(--danger-subtle);
+      border-color: var(--danger-border);
+      color: var(--danger);
+    }
+
     /* ── Responsive ── */
     @media (max-width: 680px) {
       :root { --sidebar-width: 250px; }
@@ -1243,12 +1413,81 @@
   </style>
 </head>
 <body>
+
+<!-- ── Auth Screen (shown until logged in) ── -->
+<div class="auth-screen" id="auth-screen">
+  <div class="auth-card">
+
+    <div class="auth-logo">
+      <div class="auth-logo-mark">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+        </svg>
+      </div>
+      <div>
+        <div class="auth-logo-name">DocIntel AI</div>
+        <div class="auth-logo-sub">Context-Aware Q&amp;A</div>
+      </div>
+    </div>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tab-login-btn"    onclick="switchAuthTab('login')">Sign in</button>
+      <button class="auth-tab"        id="tab-register-btn" onclick="switchAuthTab('register')">Create account</button>
+    </div>
+
+    <!-- Login form -->
+    <div id="auth-login">
+      <div class="auth-field">
+        <label class="auth-label">Email</label>
+        <input class="auth-input" id="login-email" type="email" placeholder="you@example.com" />
+      </div>
+      <div class="auth-field">
+        <label class="auth-label">Password</label>
+        <input class="auth-input" id="login-password" type="password" placeholder="••••••••"
+          onkeydown="if(event.key==='Enter') doLogin()" />
+      </div>
+      <button class="auth-btn" id="login-btn" onclick="doLogin()">Sign in</button>
+      <div class="auth-error" id="login-error"></div>
+    </div>
+
+    <!-- Register form -->
+    <div id="auth-register" style="display:none">
+      <div class="auth-field">
+        <label class="auth-label">Name</label>
+        <input class="auth-input" id="reg-name" type="text" placeholder="Your name" />
+      </div>
+      <div class="auth-field">
+        <label class="auth-label">Email</label>
+        <input class="auth-input" id="reg-email" type="email" placeholder="you@example.com" />
+      </div>
+      <div class="auth-field">
+        <label class="auth-label">Password <span style="font-weight:400;color:var(--text-dim)">(min 6 chars)</span></label>
+        <input class="auth-input" id="reg-password" type="password" placeholder="••••••••"
+          onkeydown="if(event.key==='Enter') doRegister()" />
+      </div>
+      <button class="auth-btn" id="register-btn" onclick="doRegister()">Create account</button>
+      <div class="auth-error" id="register-error"></div>
+    </div>
+
+  </div>
+</div>
+
 <div class="app">
 
   <!-- ── Header ── -->
   <header>
     <div class="logo">
-      <div class="logo-mark">🧠</div>
+      <div class="logo-mark">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+        </svg>
+      </div>
       <div>
         <div class="logo-name">DocIntel AI</div>
         <div class="logo-sub">Context-Aware Q&amp;A</div>
@@ -1260,7 +1499,11 @@
       <span class="pill">GPT-4o-mini</span>
     </div>
 
-    <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle theme">☀️</button>
+    <div class="user-badge">
+      <span class="user-name" id="header-user-name"></span>
+      <button class="logout-btn" onclick="doLogout()">Sign out</button>
+      <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle theme">☀️</button>
+    </div>
   </header>
 
   <!-- ── Body ── -->
@@ -1279,8 +1522,8 @@
         <div class="upload-form-wrap" id="upload-form">
           <!-- Tabs -->
           <div class="u-tabs">
-            <button class="u-tab active" onclick="switchTab('text')">✏️ Paste Text</button>
-            <button class="u-tab"        onclick="switchTab('file')">📁 Upload File</button>
+            <button class="u-tab active" onclick="switchTab('text')">Paste Text</button>
+            <button class="u-tab"        onclick="switchTab('file')">Upload File</button>
           </div>
 
           <!-- Paste Text -->
@@ -1307,12 +1550,17 @@
               ondragleave="onDragLeave()"
               ondrop="onDrop(event)">
               <input type="file" id="file-input" accept=".pdf,.docx,.txt" onchange="onFileSelected(this)" />
-              <div class="drop-icon">☁️</div>
+              <div class="drop-icon">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-dim)">
+                  <polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/>
+                  <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
+                </svg>
+              </div>
               <div class="drop-title">Drop file here or click</div>
               <div class="drop-sub">PDF · DOCX · TXT · Max 10MB</div>
             </div>
             <div class="file-bar" id="file-selected">
-              <span>📎</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
               <span id="file-name" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
             </div>
             <div class="u-footer" style="margin-top:7px;">
@@ -1367,7 +1615,11 @@
       <!-- Doc list -->
       <div class="doc-list" id="doc-list">
         <div class="doc-empty">
-          <div class="doc-empty-icon">📂</div>
+          <div class="doc-empty-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+            </svg>
+          </div>
           <div class="doc-empty-text">No documents yet.<br>Add one above to get started.</div>
         </div>
       </div>
@@ -1385,18 +1637,22 @@
       <!-- Chat header -->
       <div class="chat-header">
         <div class="chat-title">
-          💬 Conversation
+          Conversation
           <span class="msg-count" id="msg-count">0 messages</span>
         </div>
         <button class="clear-btn" id="clear-btn" onclick="clearChat()" title="Clear conversation">
-          🗑 Clear chat
+          Clear chat
         </button>
       </div>
 
       <!-- Messages -->
       <div class="chat-messages" id="chat-box">
         <div class="chat-empty" id="empty-state">
-          <div class="ce-icon">💬</div>
+          <div class="ce-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+          </div>
           <div class="ce-title">Ask your documents anything</div>
           <p class="ce-sub">Upload a document using the sidebar, select it, then start asking questions about its content.</p>
           <div class="hint-row">
@@ -1421,7 +1677,11 @@
             onkeydown="handleEnter(event)"
             oninput="autoResize(this)"
           ></textarea>
-          <button class="send-btn" id="send-btn" onclick="askQuestion()" title="Send">➤</button>
+          <button class="send-btn" id="send-btn" onclick="askQuestion()" title="Send">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
+          </button>
         </div>
         <div class="input-hint">Press <strong>Enter</strong> to send &nbsp;·&nbsp; <strong>Shift+Enter</strong> for new line</div>
       </div>
@@ -1434,10 +1694,113 @@
 <div class="toast-container" id="toast-container"></div>
 
 <script>
-  const API = 'http://localhost:3000/api/ai';
+  const API      = 'http://localhost:3000/api/ai';
+  const AUTH_API = 'http://localhost:3000/api/auth';
+
+  // ── Auth state ──────────────────────────────────────────────
+  let authToken = null;
+
+  function getAuthHeaders() {
+    return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` };
+  }
+
+  // On load — check if a token is already stored from a previous session
+  (function initAuth() {
+    const stored = localStorage.getItem('docintel_token');
+    const user   = JSON.parse(localStorage.getItem('docintel_user') || 'null');
+    if (stored && user) {
+      authToken = stored;
+      enterApp(user);
+    }
+  })();
+
+  function switchAuthTab(tab) {
+    document.getElementById('auth-login').style.display    = tab === 'login'    ? '' : 'none';
+    document.getElementById('auth-register').style.display = tab === 'register' ? '' : 'none';
+    document.getElementById('tab-login-btn').classList.toggle('active',    tab === 'login');
+    document.getElementById('tab-register-btn').classList.toggle('active', tab === 'register');
+    document.getElementById('login-error').classList.remove('visible');
+    document.getElementById('register-error').classList.remove('visible');
+  }
+
+  async function doLogin() {
+    const email    = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    const errEl    = document.getElementById('login-error');
+    const btn      = document.getElementById('login-btn');
+
+    errEl.classList.remove('visible');
+    if (!email || !password) { errEl.textContent = 'Email and password are required.'; errEl.classList.add('visible'); return; }
+
+    btn.disabled = true; btn.textContent = 'Signing in…';
+    try {
+      const res  = await fetch(`${AUTH_API}/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Login failed');
+      saveAuth(data.token, data.user);
+      enterApp(data.user);
+    } catch (err) {
+      errEl.textContent = err.message;
+      errEl.classList.add('visible');
+    } finally {
+      btn.disabled = false; btn.textContent = 'Sign in';
+    }
+  }
+
+  async function doRegister() {
+    const name     = document.getElementById('reg-name').value.trim();
+    const email    = document.getElementById('reg-email').value.trim();
+    const password = document.getElementById('reg-password').value;
+    const errEl    = document.getElementById('register-error');
+    const btn      = document.getElementById('register-btn');
+
+    errEl.classList.remove('visible');
+    if (!name || !email || !password) { errEl.textContent = 'All fields are required.'; errEl.classList.add('visible'); return; }
+
+    btn.disabled = true; btn.textContent = 'Creating account…';
+    try {
+      const res  = await fetch(`${AUTH_API}/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, email, password }) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Registration failed');
+      saveAuth(data.token, data.user);
+      enterApp(data.user);
+    } catch (err) {
+      errEl.textContent = err.message;
+      errEl.classList.add('visible');
+    } finally {
+      btn.disabled = false; btn.textContent = 'Create account';
+    }
+  }
+
+  function saveAuth(token, user) {
+    authToken = token;
+    localStorage.setItem('docintel_token', token);
+    localStorage.setItem('docintel_user',  JSON.stringify(user));
+  }
+
+  function enterApp(user) {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('header-user-name').textContent = user.name;
+    loadDocuments();
+    loadStats();
+  }
+
+  function doLogout() {
+    authToken = null;
+    localStorage.removeItem('docintel_token');
+    localStorage.removeItem('docintel_user');
+    document.getElementById('auth-screen').style.display = 'flex';
+    document.getElementById('header-user-name').textContent = '';
+    deselectAllDocs();
+    clearChat();
+    document.getElementById('doc-list').innerHTML = '';
+  }
+
+  // ── End Auth ────────────────────────────────────────────────
 
   let activeDocIds = new Set();
   let uploadOpen   = false;
+  let chatHistory  = []; // {role, content} pairs sent to GPT for conversation memory
 
   // ── Upload accordion ──
   function toggleUpload() {
@@ -1500,7 +1863,7 @@
     try {
       const formData = new FormData();
       formData.append('file', file);
-      const res  = await fetch(`${API}/upload`, { method: 'POST', body: formData });
+      const res  = await fetch(`${API}/upload`, { method: 'POST', headers: { 'Authorization': `Bearer ${authToken}` }, body: formData });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Upload failed');
 
@@ -1538,7 +1901,7 @@
     try {
       const res  = await fetch(`${API}/add`, {
         method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body:    JSON.stringify({ content }),
       });
       const data = await res.json();
@@ -1564,7 +1927,7 @@
   // ── Stats ──
   async function loadStats() {
     try {
-      const res  = await fetch(`${API}/stats`);
+      const res  = await fetch(`${API}/stats`, { headers: getAuthHeaders() });
       const data = await res.json();
       if (res.ok) {
         document.getElementById('stat-docs').textContent   = data.doc_count;
@@ -1575,7 +1938,7 @@
 
   // ── Fetch doc list ──
   async function fetchDocList() {
-    const res  = await fetch(`${API}/documents`);
+    const res  = await fetch(`${API}/documents`, { headers: getAuthHeaders() });
     const data = await res.json();
     return res.ok ? data.documents : [];
   }
@@ -1586,15 +1949,18 @@
     if (docs.length === 0) {
       el.innerHTML = `
         <div class="doc-empty">
-          <div class="doc-empty-icon">📂</div>
+          <div class="doc-empty-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+            </svg>
+          </div>
           <div class="doc-empty-text">No documents yet.<br>Add one above to get started.</div>
         </div>`;
       return;
     }
     el.innerHTML = docs.map(doc => {
       const sel  = activeDocIds.has(doc.id);
-      const ext  = doc.title.split('.').pop().toLowerCase();
-      const icon = ext === 'pdf' ? '📕' : ext === 'docx' ? '📘' : ext === 'txt' ? '📄' : '📝';
+      const icon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>`;
       return `
         <div class="doc-item ${sel ? 'selected' : ''}"
              id="doc-item-${doc.id}"
@@ -1660,6 +2026,7 @@
   // ── Toggle document selection ──
   function toggleDocument(id) {
     activeDocIds.has(id) ? activeDocIds.delete(id) : activeDocIds.add(id);
+    chatHistory = []; // context changed — reset memory so old history doesn't bleed into new doc
     const item = document.getElementById(`doc-item-${id}`);
     if (item) {
       const sel     = activeDocIds.has(id);
@@ -1724,7 +2091,7 @@
     event.stopPropagation();
     if (!confirm('Delete this document? This cannot be undone.')) return;
     try {
-      const res = await fetch(`${API}/documents/${id}`, { method: 'DELETE' });
+      const res = await fetch(`${API}/documents/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error || 'Delete failed');
@@ -1753,6 +2120,7 @@
         </div>
       </div>`;
     updateMsgCount(0);
+    chatHistory = []; // reset memory when chat is cleared
   }
 
   // ── Update message counter in chat header ──
@@ -1795,12 +2163,23 @@
     try {
       const res  = await fetch(`${API}/ask`, {
         method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ question, doc_session_ids: [...activeDocIds] }),
+        headers: getAuthHeaders(),
+        body:    JSON.stringify({
+          question,
+          doc_session_ids: [...activeDocIds],
+          history: chatHistory,
+        }),
       });
       const data = await res.json();
       removeTyping(typingId);
       if (!res.ok) throw new Error(data.error || 'Something went wrong');
+
+      // Update conversation history after a successful exchange
+      chatHistory.push({ role: 'user',      content: question });
+      chatHistory.push({ role: 'assistant', content: data.answer });
+      // Cap at last 6 messages (3 exchanges) to keep tokens bounded
+      if (chatHistory.length > 6) chatHistory = chatHistory.slice(-6);
+
       appendMessage('ai', data.answer, data.sources);
     } catch (err) {
       removeTyping(typingId);
@@ -1819,7 +2198,11 @@
 
     const avatar  = document.createElement('div');
     avatar.className = 'avatar';
-    avatar.textContent = role === 'user' ? '🧑' : '🤖';
+    if (role === 'user') {
+      avatar.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
+    } else {
+      avatar.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`;
+    }
 
     const col    = document.createElement('div');
     col.className = 'bubble-col';
@@ -1859,7 +2242,7 @@
 
       const copyBtn = document.createElement('button');
       copyBtn.className = 'copy-btn';
-      copyBtn.innerHTML = '⎘ Copy';
+      copyBtn.innerHTML = 'Copy';
       copyBtn.title = 'Copy response';
       copyBtn.onclick = () => {
         // Copy plain text (strip HTML tags from the bubble, exclude sources)
@@ -1867,10 +2250,10 @@
         clone.querySelector('.sources')?.remove();
         const plainText = clone.innerText || clone.textContent;
         navigator.clipboard.writeText(plainText.trim()).then(() => {
-          copyBtn.innerHTML = '✓ Copied!';
+          copyBtn.innerHTML = 'Copied!';
           copyBtn.classList.add('copied');
           setTimeout(() => {
-            copyBtn.innerHTML = '⎘ Copy';
+            copyBtn.innerHTML = 'Copy';
             copyBtn.classList.remove('copied');
           }, 2000);
         });

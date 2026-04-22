@@ -17,14 +17,15 @@ const { findTopChunks } = require('./similarity.service');
  * plausible-sounding but incorrect answers (hallucination).
  * The system prompt forces it to only use what we provide.
  */
-const generateAnswer = async (question, docSessionIds) => {
+const generateAnswer = async (question, docSessionIds, userId, history = []) => {
   // Step 1: Convert question to embedding vector
   const questionEmbedding = await generateEmbedding(question);
 
-  // Step 2: Find top 3 chunks across ALL selected document sessions.
+  // Step 2: Find top chunks across ALL selected document sessions.
   // Chunks from every selected doc compete on cosine similarity — the
-  // best 3 win regardless of which document they came from.
-  const topChunks = await findTopChunks(questionEmbedding, docSessionIds, 3);
+  // best ones win regardless of which document they came from.
+  // userId ensures only chunks owned by this user are searched.
+  const topChunks = await findTopChunks(questionEmbedding, docSessionIds, 5, userId);
 
   // Step 3: If no chunks passed the similarity threshold, skip GPT entirely.
   // Sending an empty context would cause hallucination or a confusing answer.
@@ -40,7 +41,12 @@ const generateAnswer = async (question, docSessionIds) => {
     .map((chunk, i) => `[Source ${i + 1}]:\n${chunk.content}`)
     .join('\n\n');
 
-  // Step 5: Call GPT with context-injected prompt
+  // Step 5: Build conversation history — cap at last 6 messages (3 exchanges)
+  // to keep token usage bounded regardless of how long the chat gets.
+  const recentHistory = history.slice(-6);
+
+  // Step 6: Call GPT with context + conversation history
+  // Message order: system → past turns → current user question (with context injected)
   const response = await openai.chat.completions.create({
     model: 'gpt-4o-mini',
     messages: [
@@ -55,8 +61,10 @@ RULES:
 4. Be concise and professional. Avoid filler phrases like "Certainly!" or "Great question!".
 5. Use bullet points for lists or multi-part answers. Use plain paragraphs for single-topic answers.
 6. When your answer comes from a specific part of the document, reference it naturally (e.g. "According to the document...").
-7. Respond in the same language the user asked in.`,
+7. You have access to the conversation history below — use it to understand follow-up questions and references like "it", "that", "the previous answer", etc.
+8. Respond in the same language the user asked in.`,
       },
+      ...recentHistory,
       {
         role: 'user',
         content: `Context:\n${context}\n\nQuestion: ${question}`,

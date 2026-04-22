@@ -1,4 +1,4 @@
-# 🧠 Context-Aware Document Intelligence System
+# Context-Aware Document Intelligence System
 
 ![Node.js](https://img.shields.io/badge/Node.js-22.x-339933?logo=node.js&logoColor=white)
 ![Express](https://img.shields.io/badge/Express-5.x-000000?logo=express&logoColor=white)
@@ -6,26 +6,34 @@
 ![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4o--mini-412991?logo=openai&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
-A production-ready **RAG (Retrieval-Augmented Generation)** system that lets you upload documents and ask questions about them. Built from scratch using Node.js and MySQL — **no vector database required**. Custom cosine similarity search, document session isolation, and a polished chat UI included.
+A production-ready **RAG (Retrieval-Augmented Generation)** system with JWT authentication, per-user document isolation, and conversation memory. Upload documents, ask questions, and get answers grounded strictly in your content — no hallucination. Built from scratch with Node.js and MySQL — **no vector database required**.
 
 ---
 
-## ✨ Features
+## Screenshots
 
-- **Multi-document management** — Upload multiple documents; each is isolated in its own session
-- **Document-scoped Q&A** — Questions only search the selected document, preventing cross-document contamination
-- **Custom vector search** — Cosine similarity implemented in pure JavaScript (no Pinecone, no FAISS)
-- **Similarity threshold** — Chunks below 0.3 score are filtered before GPT sees them (prevents hallucination)
-- **File upload support** — PDF, DOCX, and TXT files processed in-memory via Multer
-- **Markdown rendering** — AI answers render bullet points, bold text, and code blocks properly
-- **Rate limiting** — Protects OpenAI API key from abuse (20 req/15 min on `/ask`, 10 on uploads)
-- **Request logging** — Morgan HTTP logger for every request
-- **Knowledge base stats** — Live document and chunk counts in the UI
-- **Dark / light theme** — Fully themed chat interface
+![Login Screen](screenshots/login.png)
+![Chat Interface](screenshots/chat.png)
+![Document Sidebar](screenshots/sidebar.png)
 
 ---
 
-## 🏗️ Architecture
+## Features
+
+- **JWT Authentication** — Register/login, tokens stored in localStorage, 7-day expiry
+- **Per-user data isolation** — Every query scoped to `user_id`; users can never access each other's documents
+- **Multi-document Q&A** — Select multiple documents; chunks compete on cosine similarity across all selected docs
+- **Conversation memory** — Last 3 exchanges sent as history; AI understands follow-up questions and references
+- **Custom vector search** — Cosine similarity in pure JavaScript (no Pinecone, no FAISS)
+- **Similarity threshold** — Chunks below 0.1 score filtered before GPT sees them (prevents hallucination)
+- **File upload support** — PDF, DOCX, and TXT processed in-memory via Multer (no disk writes)
+- **Markdown rendering** — AI answers render bullet points, bold text, and code blocks
+- **Rate limiting** — 20 req/15 min on `/ask`, 10 on uploads
+- **Dark / light theme** — Fully themed two-panel chat interface
+
+---
+
+## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -36,20 +44,20 @@ A production-ready **RAG (Retrieval-Augmented Generation)** system that lets you
 │                               Embed each chunk                   │
 │                          (text-embedding-3-small)                │
 │                                       ↓                          │
-│                    Store in MySQL  ←  doc_session_id             │
+│              Store in MySQL  ←  doc_session_id + user_id        │
 │                  (content + JSON embedding)                      │
 └─────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────┐
 │                          QUERY PIPELINE                          │
 │                                                                  │
-│  Question  →  Embed question  →  Load chunks for session        │
+│  Question  →  Embed question  →  Load chunks (scoped to user)   │
 │                                       ↓                          │
 │                       Cosine Similarity score each chunk        │
 │                                       ↓                          │
-│                    Filter  score < 0.3  →  discard             │
+│                    Filter score < 0.1  →  discard               │
 │                                       ↓                          │
-│                       Top 3 chunks  →  Build context            │
+│              Top 5 chunks + last 3 conversation turns           │
 │                                       ↓                          │
 │                        GPT-4o-mini  →  Answer + Sources         │
 └─────────────────────────────────────────────────────────────────┘
@@ -57,13 +65,14 @@ A production-ready **RAG (Retrieval-Augmented Generation)** system that lets you
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 | Layer          | Technology                          | Purpose                              |
 |----------------|--------------------------------------|--------------------------------------|
 | Runtime        | Node.js 22                           | JavaScript server runtime            |
 | Framework      | Express 5                            | REST API routing                     |
 | Database       | MySQL 8 + mysql2                     | Chunk and session storage            |
+| Auth           | bcryptjs + jsonwebtoken              | Password hashing + JWT signing       |
 | Embeddings     | OpenAI text-embedding-3-small        | 1536-dim vector generation           |
 | Chat Model     | OpenAI gpt-4o-mini                   | Constrained answer generation        |
 | File Parsing   | pdf-parse, mammoth                   | PDF and DOCX text extraction         |
@@ -74,36 +83,41 @@ A production-ready **RAG (Retrieval-Augmented Generation)** system that lets you
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 ├── app/
 │   ├── config/
-│   │   ├── db.js                    # MySQL connection pool (limit: 10)
+│   │   ├── db.js                    # MySQL connection pool
 │   │   └── openai.js                # Singleton OpenAI client
+│   ├── middleware/
+│   │   └── auth.middleware.js        # verifyToken — protects all AI routes
 │   ├── models/
-│   │   └── document.model.js        # All DB queries (sessions + chunks + stats)
+│   │   ├── document.model.js        # DB queries scoped to user_id
+│   │   └── user.model.js            # findByEmail, createUser
 │   ├── services/
 │   │   ├── chunking.service.js      # Split text: 500 chars, 100 overlap
 │   │   ├── embedding.service.js     # OpenAI embeddings call
 │   │   ├── similarity.service.js    # Cosine similarity + threshold filter
-│   │   ├── ai.service.js            # Prompt engineering + GPT call
+│   │   ├── ai.service.js            # Prompt engineering + GPT call + history
 │   │   └── fileParser.service.js    # PDF / DOCX / TXT text extraction
 │   └── controllers/
-│       └── ai.controller.js         # Request handlers for all routes
+│       ├── auth.controller.js       # register + login handlers
+│       └── ai.controller.js         # Document and Q&A handlers
 ├── routes/
-│   └── ai.routes.js                 # Routes + rate limiter middleware
+│   ├── auth.routes.js               # POST /api/auth/register, /login
+│   └── ai.routes.js                 # All AI routes (protected by verifyToken)
 ├── public/
 │   └── index.html                   # Full-stack chat UI (vanilla JS)
 ├── db/
-│   └── schema.sql                   # MySQL schema (doc_sessions + documents)
-├── index.js                         # Express entry point + Morgan
+│   └── schema.sql                   # MySQL schema (users + doc_sessions + documents)
+├── index.js                         # Express entry point
 └── .env.example                     # Environment variable template
 ```
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### 1. Clone the repository
 
@@ -128,6 +142,7 @@ Fill in your `.env`:
 
 ```env
 PORT=3000
+JWT_SECRET=your_long_random_secret_here
 OPENAI_API_KEY=sk-...your-openai-key...
 DB_HOST=localhost
 DB_USER=root
@@ -136,8 +151,6 @@ DB_NAME=rag_chatbot
 ```
 
 ### 4. Set up the database
-
-Run the schema in phpMyAdmin or MySQL CLI:
 
 ```bash
 mysql -u root -p < db/schema.sql
@@ -153,47 +166,83 @@ npm run dev
 npm start
 ```
 
-Open `http://localhost:3000` in your browser.
+Open `http://localhost:3000` — you will see the login screen. Register an account to get started.
 
 ---
 
-## 📡 API Reference
+## API Reference
 
-### `POST /api/ai/add`
-Upload a plain text document.
+All `/api/ai/*` routes require `Authorization: Bearer <token>` header.
 
-**Request:**
+### Auth
+
+#### `POST /api/auth/register`
+```json
+{ "name": "John", "email": "john@example.com", "password": "secret123" }
+```
+```json
+{ "token": "eyJ...", "user": { "id": 1, "name": "John", "email": "john@example.com" } }
+```
+
+#### `POST /api/auth/login`
+```json
+{ "email": "john@example.com", "password": "secret123" }
+```
+```json
+{ "token": "eyJ...", "user": { "id": 1, "name": "John", "email": "john@example.com" } }
+```
+
+---
+
+### Documents
+
+#### `POST /api/ai/add`
 ```json
 { "content": "Your document text...", "title": "Optional title" }
 ```
-**Response:**
 ```json
 { "success": true, "doc_session_id": 3, "chunks_stored": 6 }
 ```
 
----
-
-### `POST /api/ai/upload`
-Upload a PDF, DOCX, or TXT file (multipart/form-data, field name: `file`, max 10MB).
-
-**Response:**
+#### `POST /api/ai/upload`
+Multipart form-data, field name `file`, max 10MB. Accepts PDF, DOCX, TXT.
 ```json
 { "success": true, "doc_session_id": 4, "chunks_stored": 11 }
 ```
 
+#### `GET /api/ai/documents`
+```json
+{ "documents": [{ "id": 3, "title": "HR Policy.pdf", "chunk_count": 11, "created_at": "..." }] }
+```
+
+#### `DELETE /api/ai/documents/:id`
+```json
+{ "success": true, "message": "Document deleted" }
+```
+
+#### `GET /api/ai/stats`
+```json
+{ "doc_count": 3, "chunk_count": 27 }
+```
+
 ---
 
-### `POST /api/ai/ask`
-Ask a question scoped to one document session. Rate limited: 20 req / 15 min.
+### Q&A
 
-**Request:**
-```json
-{ "question": "What is the annual leave policy?", "doc_session_id": 3 }
-```
-**Response:**
+#### `POST /api/ai/ask`
+Rate limited: 20 req / 15 min.
 ```json
 {
   "question": "What is the annual leave policy?",
+  "doc_session_ids": [3, 4],
+  "history": [
+    { "role": "user", "content": "What is this document about?" },
+    { "role": "assistant", "content": "It covers HR policies for 2024..." }
+  ]
+}
+```
+```json
+{
   "answer": "According to the document, employees are entitled to 20 days...",
   "sources": [
     { "chunk_index": 1, "score": 0.8742, "content": "Annual Leave: All full-time employees..." }
@@ -203,69 +252,38 @@ Ask a question scoped to one document session. Rate limited: 20 req / 15 min.
 
 ---
 
-### `GET /api/ai/documents`
-List all uploaded document sessions.
-
-**Response:**
-```json
-{ "documents": [{ "id": 3, "title": "HR Policy 2024", "created_at": "2024-01-15T10:30:00Z" }] }
-```
-
----
-
-### `DELETE /api/ai/documents/:id`
-Delete a document session and all its chunks (CASCADE).
-
-**Response:**
-```json
-{ "success": true, "message": "Document deleted" }
-```
-
----
-
-### `GET /api/ai/stats`
-Get total document and chunk counts for the knowledge base.
-
-**Response:**
-```json
-{ "doc_count": 3, "chunk_count": 27 }
-```
-
----
-
-## 🧩 Key Concepts
+## Key Concepts
 
 **Why no vector database?**
-This project uses MySQL's `JSON` column to store embedding arrays and computes cosine similarity in Node.js at query time. For a portfolio project this demonstrates deep understanding of the math — production systems with millions of chunks would add FAISS or Pinecone for scale.
+MySQL's `JSON` column stores embedding arrays and cosine similarity is computed in Node.js at query time. This demonstrates deep understanding of the underlying math. Production systems with millions of chunks would add FAISS or Pinecone for scale.
 
-**Document Session Isolation**
-Every uploaded document gets a `doc_session_id`. All similarity searches use `WHERE doc_session_id = ?`, so questions are always answered from one specific document. Two users uploading different files never get mixed results.
+**User isolation**
+Every `doc_session` has a `user_id` FK. All queries use `INNER JOIN doc_sessions ON ds.user_id = ?` — so even if a user manually sends a foreign `doc_session_id`, the JOIN returns zero rows. Security is enforced at the database level, not just the application level.
+
+**Conversation memory**
+The last 6 messages (3 exchanges) are sent to GPT on every request. The history is capped to keep token usage bounded — cost stays flat no matter how long the conversation gets. History resets when the user changes document selection or clears the chat.
 
 **Cosine Similarity vs Euclidean Distance**
-We use cosine similarity because we care about the *direction* of a vector (what the text means), not its *magnitude* (how long the text is). Two chunks about the same topic produce vectors pointing in the same direction regardless of length.
-
-**Similarity Threshold (0.3)**
-Chunks scoring below 0.3 are dropped before GPT sees them. If no chunks pass, the system returns "I don't know" immediately — skipping the GPT call entirely and saving API cost.
+We care about the *direction* of a vector (what the text means), not its *magnitude* (how long the text is). Two chunks about the same topic produce vectors pointing in the same direction regardless of length.
 
 **Chunking with Overlap**
-Documents are split into 500-character chunks with a 100-character overlap between adjacent chunks. The overlap prevents important information from being cut at a boundary and lost from both chunks.
+Documents split into 500-character chunks with 100-character overlap. The overlap prevents information from being cut at a boundary and lost from both chunks.
 
 **Prompt Engineering**
-Seven rules constrain the LLM: answer only from context, say "I don't know" if the answer isn't there, no filler phrases, respond in the user's language, etc. `temperature: 0.2` keeps answers focused and consistent.
+Eight rules constrain the LLM: answer only from context, use conversation history for follow-ups, say "I don't know" if the answer isn't there, no filler phrases, respond in the user's language. `temperature: 0.2` keeps answers focused.
 
 ---
 
-## 🔮 Future Enhancements
+## Future Enhancements
 
-- **User authentication** — JWT auth + `user_id` FK on `doc_sessions`; all queries scoped to `WHERE doc_session_id IN (?) AND user_id = ?` so users can only access their own documents. Currently single-user/demo only — doc IDs are not access-controlled.
 - **Redis caching** — Cache embeddings for repeated questions to cut API costs
-- **Streaming responses** — OpenAI streaming API for real-time token output in the UI
+- **Streaming responses** — OpenAI streaming API for real-time token output
 - **FAISS / Pinecone** — Replace MySQL similarity search for large-scale deployments
-- **Re-ranking** — Add a cross-encoder pass after cosine retrieval for higher accuracy
+- **Re-ranking** — Cross-encoder pass after cosine retrieval for higher accuracy
 - **Chunk metadata** — Store page numbers and headings for richer source attribution
 
 ---
 
-## 📄 License
+## License
 
 MIT
