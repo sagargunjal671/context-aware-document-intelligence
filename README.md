@@ -27,6 +27,8 @@ A production-ready **RAG (Retrieval-Augmented Generation)** system with JWT auth
 - **Custom vector search** — Cosine similarity in pure JavaScript (no Pinecone, no FAISS)
 - **Similarity threshold** — Chunks below 0.1 score filtered before GPT sees them (prevents hallucination)
 - **File upload support** — PDF, DOCX, and TXT processed in-memory via Multer (no disk writes)
+- **Streaming responses** — Tokens stream to the UI in real-time via Server-Sent Events (SSE); no waiting for full response
+- **Export chat** — Download the full conversation as a `.txt` file with one click (pure frontend, no server call)
 - **Markdown rendering** — AI answers render bullet points, bold text, and code blocks
 - **Rate limiting** — 20 req/15 min on `/ask`, 10 on uploads
 - **Dark / light theme** — Fully themed two-panel chat interface

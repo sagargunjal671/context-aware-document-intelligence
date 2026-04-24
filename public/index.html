@@ -686,6 +686,33 @@
       color: var(--danger);
     }
 
+    .export-btn {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-dim);
+      font-size: .72rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .18s;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .export-btn.visible {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .export-btn:hover {
+      background: var(--bg-hover);
+      color: var(--text);
+    }
+
     .chat-panel {
       flex: 1;
       display: flex;
@@ -1640,6 +1667,9 @@
           Conversation
           <span class="msg-count" id="msg-count">0 messages</span>
         </div>
+        <button class="export-btn" id="export-btn" onclick="exportChat()" title="Export conversation as .txt">
+          Export
+        </button>
         <button class="clear-btn" id="clear-btn" onclick="clearChat()" title="Clear conversation">
           Clear chat
         </button>
@@ -2130,8 +2160,42 @@
     else _msgCount++;
     const el  = document.getElementById('msg-count');
     const btn = document.getElementById('clear-btn');
+    const exp = document.getElementById('export-btn');
     el.textContent = _msgCount + ' message' + (_msgCount !== 1 ? 's' : '');
     btn.classList.toggle('visible', _msgCount > 0);
+    exp.classList.toggle('visible', _msgCount > 0);
+  }
+
+  // ── Export chat as .txt ──
+  function exportChat() {
+    const box = document.getElementById('chat-box');
+    const messages = box.querySelectorAll('.message');
+    if (!messages.length) return;
+
+    let output = 'DocIntel AI — Exported Conversation\n';
+    output += new Date().toLocaleString() + '\n';
+    output += '='.repeat(40) + '\n\n';
+
+    messages.forEach(msg => {
+      const isUser = msg.classList.contains('user');
+      const bubble = msg.querySelector('.bubble');
+      if (!bubble) return;
+
+      // Get plain text — strip sources section before reading
+      const clone = bubble.cloneNode(true);
+      clone.querySelector('.sources')?.remove();
+      const text = (clone.innerText || clone.textContent).trim();
+
+      output += (isUser ? 'You' : 'Assistant') + ':\n' + text + '\n\n';
+    });
+
+    const blob = new Blob([output], { type: 'text/plain' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = 'chat-export-' + Date.now() + '.txt';
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   function useHint(el) {
