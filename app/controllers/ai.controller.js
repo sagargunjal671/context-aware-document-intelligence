@@ -1,14 +1,48 @@
-const { chunkText }         = require('../services/chunking.service');
-const { generateEmbedding } = require('../services/embedding.service');
+const { chunkText }          = require('../services/chunking.service');
+const { generateEmbeddings } = require('../services/embedding.service');
 const { generateAnswer, generateAnswerStream } = require('../services/ai.service');
-const { extractText }       = require('../services/fileParser.service');
+const { extractText }        = require('../services/fileParser.service');
+const {
+  upsertChunks,
+  deleteByDocSession,
+  countByUser,
+} = require('../services/vectorStore.service');
 const {
   createSession,
   getAllSessions,
   deleteSession,
-  insertChunk,
-  getStats,
+  getSessionCount,
 } = require('../models/document.model');
+
+/**
+ * Chunk → embed → store, shared by the text and file upload routes.
+ *
+ * The doc session is created first because its id seeds the deterministic
+ * Qdrant point ids. If embedding or upserting then fails, the session row is
+ * removed again — otherwise a failed upload would leave a document listed in
+ * the sidebar with no chunks behind it, which looks like the AI has forgotten
+ * its contents rather than like an error.
+ *
+ * MySQL and Qdrant cannot share a transaction, so this rollback is the
+ * closest equivalent: one store is only left written if the other succeeded.
+ */
+const indexDocument = async (title, text, userId) => {
+  // Chunking is synchronous and cheap, so it happens before the insert —
+  // that way the session row carries its final chunk_count from the start.
+  const chunks    = chunkText(text);
+  const sessionId = await createSession(title, userId, text, chunks.length);
+
+  try {
+    const embeddings = await generateEmbeddings(chunks);
+    await upsertChunks(sessionId, userId, chunks, embeddings);
+    return { sessionId, chunksStored: chunks.length };
+  } catch (err) {
+    // Best-effort cleanup of both stores before rethrowing.
+    await deleteByDocSession(sessionId, userId).catch(() => {});
+    await deleteSession(sessionId, userId).catch(() => {});
+    throw err;
+  }
+};
 
 /**
  * POST /api/ai/add
@@ -26,20 +60,13 @@ const addDocument = async (req, res) => {
     }
 
     const sessionTitle = title?.trim() || `Document – ${new Date().toLocaleString()}`;
-    const sessionId = await createSession(sessionTitle, userId);
-
-    const chunks = chunkText(content);
-
-    for (let i = 0; i < chunks.length; i++) {
-      const embedding = await generateEmbedding(chunks[i]);
-      await insertChunk(sessionId, chunks[i], embedding, i);
-    }
+    const { sessionId, chunksStored } = await indexDocument(sessionTitle, content, userId);
 
     return res.status(201).json({
       success:        true,
       message:        'Document stored successfully',
       doc_session_id: sessionId,
-      chunks_stored:  chunks.length,
+      chunks_stored:  chunksStored,
     });
   } catch (err) {
     console.error('[addDocument]', err.message);
@@ -71,20 +98,17 @@ const uploadFile = async (req, res) => {
       return res.status(400).json({ error: 'Could not extract text from the file' });
     }
 
-    const sessionId = await createSession(req.file.originalname, userId);
-
-    const chunks = chunkText(text);
-
-    for (let i = 0; i < chunks.length; i++) {
-      const embedding = await generateEmbedding(chunks[i]);
-      await insertChunk(sessionId, chunks[i], embedding, i);
-    }
+    const { sessionId, chunksStored } = await indexDocument(
+      req.file.originalname,
+      text,
+      userId
+    );
 
     return res.status(201).json({
       success:        true,
       message:        `File "${req.file.originalname}" processed successfully`,
       doc_session_id: sessionId,
-      chunks_stored:  chunks.length,
+      chunks_stored:  chunksStored,
     });
   } catch (err) {
     console.error('[uploadFile]', err.message);
@@ -94,9 +118,9 @@ const uploadFile = async (req, res) => {
 
 /**
  * POST /api/ai/ask
- * Scoped to req.user.id — the JOIN in fetchChunksBySessions
- * ensures a user can never retrieve another user's chunks
- * even if they pass foreign doc_session_ids.
+ * Scoped to req.user.id — the Qdrant payload filter in vectorStore.search
+ * ensures a user can never retrieve another user's chunks even if they pass
+ * foreign doc_session_ids.
  */
 const askQuestion = async (req, res) => {
   try {
@@ -141,11 +165,25 @@ const getDocuments = async (req, res) => {
 /**
  * DELETE /api/ai/documents/:id
  * Deletes a session only if it belongs to the logged-in user.
+ *
+ * Qdrant first, MySQL second. There is no ON DELETE CASCADE across stores, so
+ * if this ran the other way round and the Qdrant call failed, the vectors
+ * would survive with no document row pointing at them — invisible in the UI
+ * but still returned as answer sources. Deleting vectors first means a failure
+ * leaves the document fully intact instead.
  */
 const deleteDocument = async (req, res) => {
   try {
-    const { id } = req.params;
-    await deleteSession(id, req.user.id);
+    const { id }  = req.params;
+    const userId  = req.user.id;
+
+    await deleteByDocSession(id, userId);
+    const affected = await deleteSession(id, userId);
+
+    if (affected === 0) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
+
     return res.status(200).json({ success: true, message: 'Document deleted' });
   } catch (err) {
     console.error('[deleteDocument]', err.message);
@@ -156,11 +194,17 @@ const deleteDocument = async (req, res) => {
 /**
  * GET /api/ai/stats
  * Returns doc and chunk counts scoped to the logged-in user.
+ * Documents come from MySQL, chunks from Qdrant — there is no chunk
+ * table left to COUNT.
  */
 const getKnowledgeStats = async (req, res) => {
   try {
-    const stats = await getStats(req.user.id);
-    return res.status(200).json(stats);
+    const userId = req.user.id;
+    const [doc_count, chunk_count] = await Promise.all([
+      getSessionCount(userId),
+      countByUser(userId),
+    ]);
+    return res.status(200).json({ doc_count, chunk_count });
   } catch (err) {
     console.error('[getKnowledgeStats]', err.message);
     return res.status(500).json({ error: err.message });

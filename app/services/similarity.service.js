@@ -1,4 +1,21 @@
-const { fetchChunksBySessions } = require('../models/document.model');
+const { scrollAllVectors } = require('./vectorStore.service');
+
+/**
+ * Exact (brute-force) vector search.
+ *
+ * This was the app's only search path before Qdrant. It is kept — not as dead
+ * code, but as the ground truth the approximate index is measured against.
+ *
+ * Qdrant's HNSW index is APPROXIMATE: it walks a navigable graph and looks at
+ * a small fraction of the collection, so it can miss a true nearest neighbour.
+ * The code below looks at every single vector, so its top-N is correct by
+ * definition. scripts/benchmark.js runs both over the same queries and reports
+ * recall@5 — how often the fast path agrees with this one — alongside latency.
+ *
+ * That comparison is the whole reason a vector database exists: exact search
+ * is O(n) and gets slower with every document; HNSW is roughly O(log n) and
+ * trades a small, MEASURABLE amount of accuracy for it.
+ */
 
 /**
  * Calculates cosine similarity between two vectors.
@@ -16,6 +33,10 @@ const { fetchChunksBySessions } = require('../models/document.model');
  * We care about the direction of the vector (what it means),
  * not its length. Two chunks about the same topic point in the
  * same direction regardless of how long the text is.
+ *
+ * The Qdrant collection is created with Distance.Cosine for exactly this
+ * reason — the two paths must agree on the metric or the recall numbers
+ * would be meaningless.
  */
 const cosineSimilarity = (A, B) => {
   const dotProduct = A.reduce((sum, val, i) => sum + val * B[i], 0);
@@ -25,9 +46,6 @@ const cosineSimilarity = (A, B) => {
 };
 
 // Minimum similarity score a chunk must reach to be included in context.
-// Chunks below this threshold are too unrelated to the question and are
-// filtered out before being sent to GPT — preventing hallucination from
-// irrelevant context.
 //
 // Why 0.1 and not higher?
 // OpenAI embeddings for broad/meta questions ("what is this doc about?")
@@ -37,33 +55,27 @@ const cosineSimilarity = (A, B) => {
 const MIN_SCORE = 0.1;
 
 /**
- * Finds the top N most relevant chunks for a given question embedding.
+ * Finds the top N chunks by scoring EVERY vector in the collection.
  *
- * Steps:
- * 1. Load all stored chunks scoped to this document session
- * 2. Compute cosine similarity between question and each chunk
- * 3. Filter out chunks below the MIN_SCORE threshold
- * 4. Sort by score descending
- * 5. Return top N results with their similarity scores
- *
- * If no chunks pass the threshold, an empty array is returned.
- * The caller (ai.service) handles this by telling GPT there is no context.
+ * Pulls all matching points out of Qdrant (scoped to the user) and scores them
+ * in Node. This is deliberately the slow path — it is what the app used to do
+ * on every question, and it is now used only by the benchmark.
  */
-const findTopChunks = async (questionEmbedding, docSessionIds, topN = 5, userId) => {
-  const allChunks = await fetchChunksBySessions(docSessionIds, userId);
+const findTopChunksExact = async (questionEmbedding, docSessionIds, topN = 5, userId) => {
+  const allChunks = await scrollAllVectors(docSessionIds, userId);
 
   const scored = allChunks.map((chunk) => ({
     id:          chunk.id,
     content:     chunk.content,
     chunk_index: chunk.chunk_index,
+    doc_session_id: chunk.doc_session_id,
     score:       cosineSimilarity(questionEmbedding, chunk.embedding),
   }));
 
-  // Filter, sort highest score first, return top N
   return scored
     .filter((chunk) => chunk.score >= MIN_SCORE)
     .sort((a, b) => b.score - a.score)
     .slice(0, topN);
 };
 
-module.exports = { findTopChunks };
+module.exports = { cosineSimilarity, findTopChunksExact, MIN_SCORE };
